@@ -1,9 +1,12 @@
 package main
 
 import (
+        "encoding/json"
         "flag"
         "fmt"
+        "io"
         "log"
+        "net/http"
         "os"
         "os/signal"
         "strings"
@@ -11,10 +14,11 @@ import (
 
         "github.com/bwmarrin/discordgo"
 )
-
+const DOG_API_URL   = "https://api.thedogapi.com/"
 // Variables used for command line parameters
 var (
         Token string
+        DogToken string
 )
 
 func init() {
@@ -26,6 +30,7 @@ func init() {
 func main() {
 
         Token = os.Getenv("DISCORDTOKEN")
+        DogToken = os.Getenv("DOGAPITOKEN")
         // Create a new Discord session using the provided bot token.
         dg, err := discordgo.New("Bot " + Token)
         if err != nil {
@@ -67,8 +72,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         }
         // If the message is "ping" reply with "Pong!"
         log.Print(s.State.User.ID)
-
-
         messageContent := strings.ToLower(m.Content)
         switch messageContent {
         case "ping":
@@ -79,5 +82,79 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 s.UpdateGameStatus(0, "Fetch")
         case "pong":
                 s.ChannelMessageSend(m.ChannelID, "Ping!")
+        case "woof":
+                Dogs := loadImage()
+                dog := Dogs[0]
+                // Create the file
+                out, err := os.Create("./"+dog.ID+".jpg")
+                if err != nil {
+
+                }
+                defer out.Close()
+
+                resp, err := http.Get(dog.URL)
+                // Write the body to file
+                _, err = io.Copy(out, resp.Body)
+                f, err := os.Open("./"+dog.ID+".jpg")
+                var r io.Reader
+                r = f
+                file := discordgo.File{
+                        Name:        dog.Breeds[0].Name+".jpg",
+                        ContentType: "image/jpg",
+                        Reader:      r,
+                }
+                message := discordgo.MessageSend{
+                        Content:         "***"+dog.Breeds[0].Name + "***\r*"+dog.Breeds[0].Temperament+"* ",
+                        File:           &file,
+                }
+                //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
+                os.Remove("./"+dog.ID+".jpg")
         }
+}
+type Dog []struct {
+        Breeds []struct {
+                Weight struct {
+                        Imperial string `json:"imperial"`
+                        Metric   string `json:"metric"`
+                } `json:"weight"`
+                Height struct {
+                        Imperial string `json:"imperial"`
+                        Metric   string `json:"metric"`
+                } `json:"height"`
+                ID               int    `json:"id"`
+                Name             string `json:"name"`
+                BredFor          string `json:"bred_for"`
+                BreedGroup       string `json:"breed_group"`
+                LifeSpan         string `json:"life_span"`
+                Temperament      string `json:"temperament"`
+                ReferenceImageID string `json:"reference_image_id"`
+        } `json:"breeds"`
+        ID     string `json:"id"`
+        URL    string `json:"url"`
+        Width  int    `json:"width"`
+        Height int    `json:"height"`
+}
+func loadImage() Dog {
+        theDog := Dog{}
+        client := &http.Client{}
+        req, err := http.NewRequest("GET", DOG_API_URL+"v1/images/search", nil)
+        if err != nil {
+                log.Print(err)
+                os.Exit(1)
+        }
+
+        req.Header.Set("X-API-KEY", DogToken)
+
+        q := req.URL.Query()
+        q.Add("has_breeds", "true")
+        q.Add("mime_types", "jpg,png")
+        q.Add("size", "small")
+        q.Add("limit", "1")
+        req.URL.RawQuery = q.Encode()
+        resp, err := client.Do(req)
+        defer resp.Body.Close()
+        json.NewDecoder(resp.Body).Decode(&theDog)
+        return theDog
+
 }
