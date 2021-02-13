@@ -3,9 +3,9 @@ package main
 import (
         "flag"
         "fmt"
-        "log"
         "os"
         "os/signal"
+        "strings"
         "syscall"
 
         "github.com/bwmarrin/discordgo"
@@ -65,18 +65,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 return
         }
         // If the message is "ping" reply with "Pong!"
-        log.Print(s.State.User.ID)
-        if m.Content == "ping" {
+
+        messageContent := strings.ToLower(m.Content)
+        switch messageContent {
+        case "ping":
                 s.ChannelMessageSend(m.ChannelID, "Pong!")
                 s.UpdateGameStatus(0, "the Stock Market")
-        }
-        if m.Content == "fetch!" {
+        case "fetch!":
                 s.ChannelMessageSend(m.ChannelID, "Ruff!")
                 s.UpdateGameStatus(0, "Fetch")
-        }
-
-        // If the message is "pong" reply with "Ping!"
-        if m.Content == "pong" {
+        case "pong":
                 s.ChannelMessageSend(m.ChannelID, "Ping!")
         }
 }
