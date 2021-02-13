@@ -96,6 +96,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 // Write the body to file
                 _, err = io.Copy(out, resp.Body)
                 f, err := os.Open("./"+dog.ID+".jpg")
+                defer f.Close()
                 var r io.Reader
                 r = f
                 file := discordgo.File{
@@ -110,6 +111,22 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
                 os.Remove("./"+dog.ID+".jpg")
+        case "it's thursday":
+                f, _ := os.Open("./"+"thursday.gif")
+                defer f.Close()
+                var r io.Reader
+                r = f
+                file := discordgo.File{
+                        Name:        "thursday.gif",
+                        ContentType: "image/gif",
+                        Reader:      r,
+                }
+                message := discordgo.MessageSend{
+                        Content:         "*what a concept.*",
+                        File:           &file,
+                }
+                //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
         }
 }
 type Dog []struct {
