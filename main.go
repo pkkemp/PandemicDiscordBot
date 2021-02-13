@@ -3,6 +3,7 @@ package main
 import (
         "flag"
         "fmt"
+        "log"
         "os"
         "os/signal"
         "strings"
@@ -65,6 +66,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 return
         }
         // If the message is "ping" reply with "Pong!"
+        log.Print(s.State.User.ID)
+
 
         messageContent := strings.ToLower(m.Content)
         switch messageContent {
