@@ -137,18 +137,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 log.Println(quotes[num])
 
         case "it's thursday":
-                f, _ := os.Open("./"+"thursday.gif")
-                defer f.Close()
-                var r io.Reader
-                r = f
-                file := discordgo.File{
-                        Name:        "thursday.gif",
-                        ContentType: "image/gif",
-                        Reader:      r,
-                }
-                message := discordgo.MessageSend{
-                        Content:         "*what a concept.*",
-                        File:           &file,
+                weekday := time.Now().Weekday()
+                var message discordgo.MessageSend
+                if(int(weekday) != 4) {
+                        message = discordgo.MessageSend{
+                                Content:         "*no it's not*",
+                        }
+                } else {
+                        f, _ := os.Open("./"+"thursday.gif")
+                        defer f.Close()
+                        var r io.Reader
+                        r = f
+                        file := discordgo.File{
+                                Name:        "thursday.gif",
+                                ContentType: "image/gif",
+                                Reader:      r,
+                        }
+                        message = discordgo.MessageSend{
+                                Content:         "*what a concept.*",
+                                File:           &file,
+                        }
                 }
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
