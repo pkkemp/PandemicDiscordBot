@@ -160,7 +160,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 for _, word := range words {
                         tempWord := re.ReplaceAllString(word, "")
-                        println(tempWord)
                         if(tempWord == "why") {
                                 message := discordgo.MessageSend{
                                         Content:         "_You see things; and you say 'Why?' But I dream things that never were; and I say 'Why not?'☄️✨_"+"\r"+"***—George Bernard Shaw***",
