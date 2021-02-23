@@ -11,6 +11,7 @@ import (
         "net/http"
         "os"
         "os/signal"
+        "regexp"
         "strings"
         "syscall"
         "time"
@@ -153,8 +154,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
         default:
                 words := strings.Split(messageContent, " ")
+                re, err := regexp.Compile(`[^\w]`)
+                if err != nil {
+                        log.Fatal(err)
+                }
                 for _, word := range words {
-                        if(word == "why" || word == "why?") {
+                        tempWord := re.ReplaceAllString(word, "")
+                        println(tempWord)
+                        if(tempWord == "why") {
                                 message := discordgo.MessageSend{
                                         Content:         "_You see things; and you say 'Why?' But I dream things that never were; and I say 'Why not?'_"+"\r"+"***—George Bernard Shaw***",
                                 }
