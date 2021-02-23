@@ -5,20 +5,25 @@ import (
         "flag"
         "fmt"
         "io"
+        "io/ioutil"
         "log"
+        "math/rand"
         "net/http"
         "os"
         "os/signal"
         "strings"
         "syscall"
+        "time"
 
         "github.com/bwmarrin/discordgo"
 )
 const DOG_API_URL   = "https://api.thedogapi.com/"
+const CAT_API_URL   = "https://api.thecatapi.com/"
 // Variables used for command line parameters
 var (
         Token string
         DogToken string
+        CatToken string
 )
 
 func init() {
@@ -31,6 +36,9 @@ func main() {
 
         Token = os.Getenv("DISCORDTOKEN")
         DogToken = os.Getenv("DOGAPITOKEN")
+        CatToken = os.Getenv("CATTOKEN")
+
+        log.Println(Token)
         // Create a new Discord session using the provided bot token.
         dg, err := discordgo.New("Bot " + Token)
         if err != nil {
@@ -111,6 +119,22 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
                 os.Remove("./"+dog.ID+".jpg")
+        case "quote":
+                quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
+                if(err != nil) {
+                        break
+                }
+                var quotes []QuoteData
+                err2 := json.Unmarshal(quotesFile, &quotes)
+                if(err2 != nil) {
+                        log.Println(err2)
+                }
+                rand.Seed(time.Now().UnixNano())
+                min := 0
+                max := len(quotes)
+                num := rand.Intn(max - min + 1) + min
+                log.Println(quotes[num])
+
         case "it's thursday":
                 f, _ := os.Open("./"+"thursday.gif")
                 defer f.Close()
@@ -127,8 +151,30 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
+        default:
+                words := strings.Split(messageContent, " ")
+                for _, word := range words {
+                        if(word == "why" || word == "why?") {
+                                message := discordgo.MessageSend{
+                                        Content:         "_You see things; and you say 'Why?' But I dream things that never were; and I say 'Why not?'_"+"\r"+"***—George Bernard Shaw***",
+                                }
+                                s.ChannelMessageSendComplex(m.ChannelID, &message)
+                                //make sure we only send it once per message
+                                break
+                        }
+
+                }
         }
 }
+
+type QuoteData []struct {
+        Type     string `json:"type"`
+        Language string `json:"language"`
+        Quote    string `json:"quote"`
+        Author   string `json:"author,omitempty"`
+        Source   string `json:"source:,omitempty"`
+}
+
 type Dog []struct {
         Breeds []struct {
                 Weight struct {
