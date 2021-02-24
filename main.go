@@ -121,11 +121,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
                 os.Remove("./"+dog.ID+".jpg")
         case "quote":
-                quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
+                quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
                 if(err != nil) {
                         break
                 }
-                var quotes []QuoteData
+                var quotes QuoteData
                 err2 := json.Unmarshal(quotesFile, &quotes)
                 if(err2 != nil) {
                         log.Println(err2)
@@ -134,7 +134,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 min := 0
                 max := len(quotes)
                 num := rand.Intn(max - min + 1) + min
-                log.Println(quotes[num])
+                //log.Println(quotes[num])
+                message := discordgo.MessageSend{
+                        Content:         "_" + quotes[num].Text + "_" +"\r"+"***—"+quotes[num].Author+"***",
+                }
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
 
         case "it's thursday":
                 weekday := time.Now().Weekday()
@@ -182,11 +186,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 type QuoteData []struct {
-        Type     string `json:"type"`
-        Language string `json:"language"`
-        Quote    string `json:"quote"`
-        Author   string `json:"author,omitempty"`
-        Source   string `json:"source:,omitempty"`
+        Author string `json:"author"`
+        Text   string `json:"text"`
 }
 
 type Dog []struct {
