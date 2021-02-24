@@ -1,3 +1,6 @@
 [submodule "json-tv-quotes"]
 	path = json-tv-quotes
 	url = https://github.com/msramalho/json-tv-quotes
+[submodule "quotes"]
+	path = quotes
+	url = https://github.com/dwyl/quotes.git
