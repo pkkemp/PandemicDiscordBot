@@ -120,7 +120,33 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
                 os.Remove("./"+dog.ID+".jpg")
+        case "moviequote":
+                //read the contents of the quotes file into memory
+                quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
+                if(err != nil) {
+                        break
+                }
+                var quotes MovieQuotes
+                err2 := json.Unmarshal(quotesFile, &quotes)
+                if(err2 != nil) {
+                        log.Println(err2)
+                }
+                rand.Seed(time.Now().UnixNano())
+                min := 0
+                max := len(quotes)
+                num := rand.Intn(max - min + 1) + min
+                //log.Println(quotes[num])
+                messageText := "_" + quotes[num].Quote + "_" +"\r"+"***—"+quotes[num].Author+"***"
+                if(quotes[num].Source != "") {
+                        messageText += " _(" + quotes[num].Source + ")_"
+                }
+                message := discordgo.MessageSend{
+                        Content:         messageText,
+                }
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
+
         case "quote":
+                //read the contents of the quotes file into memory
                 quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
                 if(err != nil) {
                         break
@@ -188,6 +214,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 type QuoteData []struct {
         Author string `json:"author"`
         Text   string `json:"text"`
+}
+
+type MovieQuotes []struct {
+        Type     string `json:"type"`
+        Language string `json:"language"`
+        Quote    string `json:"quote"`
+        Author   string `json:"author,omitempty"`
+        Source   string `json:"source,omitempty"`
 }
 
 type Dog []struct {
