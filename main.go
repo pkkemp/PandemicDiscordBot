@@ -38,8 +38,6 @@ func main() {
         Token = os.Getenv("DISCORDTOKEN")
         DogToken = os.Getenv("DOGAPITOKEN")
         CatToken = os.Getenv("CATTOKEN")
-
-        log.Println(Token)
         // Create a new Discord session using the provided bot token.
         dg, err := discordgo.New("Bot " + Token)
         if err != nil {
@@ -79,8 +77,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         if m.Author.ID == s.State.User.ID {
                 return
         }
-        // If the message is "ping" reply with "Pong!"
-        log.Print(s.State.User.ID)
         messageContent := strings.ToLower(m.Content)
         //replace weird iOS single quotes/apostrophe
         messageContent = strings.Replace(messageContent, "’", "'", -1)
