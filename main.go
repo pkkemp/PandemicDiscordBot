@@ -82,6 +82,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         // If the message is "ping" reply with "Pong!"
         log.Print(s.State.User.ID)
         messageContent := strings.ToLower(m.Content)
+        //replace weird iOS single quotes/apostrophe
+        messageContent = strings.Replace(messageContent, "’", "'", -1)
+
         switch messageContent {
         case "ping":
                 s.ChannelMessageSend(m.ChannelID, "Pong!")
