@@ -70,6 +70,9 @@ func main() {
 
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
+
+const DISCORD_ADMIN = 0x00000008
+const MANAGE_ROLES = 0x10000000
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
         // Ignore all messages created by the bot itself
@@ -77,14 +80,41 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         if m.Author.ID == s.State.User.ID {
                 return
         }
-        messageContent := strings.ToLower(m.Content)
+        //messageContent := strings.ToLower(m.Content)
         //replace weird iOS single quotes/apostrophe
-        messageContent = strings.Replace(messageContent, "’", "'", -1)
-
-        switch messageContent {
+        messageContent := strings.Replace(m.Content, "’", "'", -1)
+        words := strings.Split(messageContent, " ")
+        switch strings.ToLower(words[0]) {
         case "ping":
                 s.ChannelMessageSend(m.ChannelID, "Pong!")
                 s.UpdateGameStatus(0, "the Stock Market")
+        case "$subscribe":
+                allRoles, _ := s.GuildRoles(m.GuildID)
+                name := strings.Join(words[1:], " ")
+                for _, role := range allRoles {
+                        if(role.Name == name) {
+                                if((role.Permissions & DISCORD_ADMIN == DISCORD_ADMIN) || (role.Permissions & MANAGE_ROLES == MANAGE_ROLES) || role.Permissions > 0) {
+                                        s.ChannelMessageSendReply(m.ChannelID, "I'm sorry, but I can't grant you roles with permissions", m.Reference())
+                                } else {
+                                        print(allRoles)
+                                        s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, role.ID)
+                                }
+                        }
+
+                }
+        case "$createrole":
+                role, err := s.GuildRoleCreate(m.GuildID)
+                if (err != nil) {
+                        log.Println(err)
+                }
+                rand.Seed(time.Now().UnixNano())
+                min := 0
+                max := 0xFFFFFF
+                randomColor := rand.Intn(max - min + 1) + min
+
+                name := strings.Join(words[1:], " ")
+                s.GuildRoleEdit(m.GuildID, role.ID, name, randomColor, false, 0, true)
+                s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, role.ID)
         case "fetch!":
                 s.ChannelMessageSend(m.ChannelID, "Ruff!")
                 s.UpdateGameStatus(0, "Fetch")
@@ -165,30 +195,32 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
 
-        case "it's thursday":
-                weekday := time.Now().Weekday()
-                var message discordgo.MessageSend
-                if(int(weekday) != 4) {
-                        message = discordgo.MessageSend{
-                                Content:         "*no it's not*",
+        case "it's":
+                if(strings.ToLower(words[1]) == "thursday") {
+                        weekday := time.Now().Weekday()
+                        var message discordgo.MessageSend
+                        if (int(weekday) != 4) {
+                                message = discordgo.MessageSend{
+                                        Content: "*no it's not*",
+                                }
+                        } else {
+                                f, _ := os.Open("./" + "thursday.gif")
+                                defer f.Close()
+                                var r io.Reader
+                                r = f
+                                file := discordgo.File{
+                                        Name:        "thursday.gif",
+                                        ContentType: "image/gif",
+                                        Reader:      r,
+                                }
+                                message = discordgo.MessageSend{
+                                        Content: "***what a concept.***",
+                                        File:    &file,
+                                }
                         }
-                } else {
-                        f, _ := os.Open("./"+"thursday.gif")
-                        defer f.Close()
-                        var r io.Reader
-                        r = f
-                        file := discordgo.File{
-                                Name:        "thursday.gif",
-                                ContentType: "image/gif",
-                                Reader:      r,
-                        }
-                        message = discordgo.MessageSend{
-                                Content:         "*what a concept.*",
-                                File:           &file,
-                        }
+                        //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
+                        s.ChannelMessageSendComplex(m.ChannelID, &message)
                 }
-                //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
-                s.ChannelMessageSendComplex(m.ChannelID, &message)
         default:
                 words := strings.Split(messageContent, " ")
                 re, err := regexp.Compile(`[^\w]`)
