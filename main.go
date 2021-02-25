@@ -99,10 +99,50 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                                         (role.Permissions & discordgo.PermissionManageRoles == discordgo.PermissionManageRoles)) {
                                         s.ChannelMessageSendReply(m.ChannelID, "I'm sorry, but I can't grant you roles with permissions", m.Reference())
                                 } else {
-                                        print(allRoles)
                                         s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, role.ID)
+                                        s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+                                }
+                                //we found a match, so we can stop the loop
+                                break
+                        }
+
+
+                }
+        case "$unsubscribe":
+                allRoles, _ := s.GuildRoles(m.GuildID)
+                name := strings.Join(words[1:], " ")
+                for _, role := range allRoles {
+                        if(role.Name == name) {
+                                //TODO fix the permissions here and add the rest of discord bitwise flags
+                                //right now the || role.Permissions > 0 will always make this statement false if the role has associated permissions
+                                if(role.Permissions > 0 ||
+                                    (role.Permissions & discordgo.PermissionAdministrator == discordgo.PermissionAdministrator) ||
+                                    (role.Permissions & discordgo.PermissionManageRoles == discordgo.PermissionManageRoles)) {
+                                        s.ChannelMessageSendReply(m.ChannelID, "I'm sorry, but I can't remove roles with permissions", m.Reference())
+                                } else {
+                                        s.GuildMemberRoleRemove(m.GuildID, m.Author.ID, role.ID)
+                                        s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
+                                }
+                                //we found a match, so we can stop the loop
+                                break
+                        }
+
+
+                }
+        case "$deleterole":
+                allRoles, _ := s.GuildRoles(m.GuildID)
+                name := strings.Join(words[1:], " ")
+                for _, role := range allRoles {
+                        if(role.Name == name) {
+                                if(role.Permissions > 0) {
+                                        s.ChannelMessageSendReply(m.ChannelID, "I'm sorry, but I can't delete roles with permissions", m.Reference())
+                                } else {
+                                        s.GuildRoleDelete(m.GuildID, role.ID)
+                                        s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
                                 }
                         }
+                        //we found a match, so we can stop the loop
+                        break
 
                 }
         case "$createrole":
@@ -118,6 +158,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 name := strings.Join(words[1:], " ")
                 s.GuildRoleEdit(m.GuildID, role.ID, name, randomColor, false, 0, true)
                 s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, role.ID)
+                s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
         case "fetch!":
                 s.ChannelMessageSend(m.ChannelID, "Ruff!")
                 s.UpdateGameStatus(0, "Fetch")
