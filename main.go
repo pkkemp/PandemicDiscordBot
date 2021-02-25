@@ -140,9 +140,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                                         s.GuildRoleDelete(m.GuildID, role.ID)
                                         s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
                                 }
+                                //we found a match, so we can stop the loop
+                                break
                         }
-                        //we found a match, so we can stop the loop
-                        break
+
 
                 }
         case "$createrole":
