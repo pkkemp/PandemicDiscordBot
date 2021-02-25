@@ -71,8 +71,6 @@ func main() {
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
 
-const DISCORD_ADMIN = 0x00000008
-const MANAGE_ROLES = 0x10000000
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
         // Ignore all messages created by the bot itself
@@ -83,6 +81,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
         //messageContent := strings.ToLower(m.Content)
         //replace weird iOS single quotes/apostrophe
         messageContent := strings.Replace(m.Content, "’", "'", -1)
+        //split the words into an array
         words := strings.Split(messageContent, " ")
         switch strings.ToLower(words[0]) {
         case "ping":
@@ -93,7 +92,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 name := strings.Join(words[1:], " ")
                 for _, role := range allRoles {
                         if(role.Name == name) {
-                                if((role.Permissions & DISCORD_ADMIN == DISCORD_ADMIN) || (role.Permissions & MANAGE_ROLES == MANAGE_ROLES) || role.Permissions > 0) {
+                                //TODO fix the permissions here and add the rest of discord bitwise flags
+                                //right now the || role.Permissions > 0 will always make this statement false if the role has associated permissions
+                                if(role.Permissions > 0 ||
+                                        (role.Permissions & discordgo.PermissionAdministrator == discordgo.PermissionAdministrator) ||
+                                        (role.Permissions & discordgo.PermissionManageRoles == discordgo.PermissionManageRoles)) {
                                         s.ChannelMessageSendReply(m.ChannelID, "I'm sorry, but I can't grant you roles with permissions", m.Reference())
                                 } else {
                                         print(allRoles)
@@ -173,7 +176,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                         Content:         messageText,
                 }
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
-
         case "quote":
                 //read the contents of the quotes file into memory
                 quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
