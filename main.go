@@ -190,9 +190,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 message := discordgo.MessageSend{
                         Content:         "***"+dog.Breeds[0].Name + "***\r*"+dog.Breeds[0].Temperament+"* ",
                         File:           &file,
+                        Reference: m.Reference(),
                 }
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
+
                 os.Remove("./"+dog.ID+".jpg")
         case "moviequote":
                 //read the contents of the quotes file into memory
@@ -216,6 +218,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 message := discordgo.MessageSend{
                         Content:         messageText,
+                        Reference: m.Reference(),
                 }
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
         case "quote":
@@ -236,6 +239,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 //log.Println(quotes[num])
                 message := discordgo.MessageSend{
                         Content:         "_" + quotes[num].Text + "_" +"\r"+"***—"+quotes[num].Author+"***",
+                        Reference: m.Reference(),
                 }
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
 
@@ -276,6 +280,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                         if(tempWord == "why") {
                                 message := discordgo.MessageSend{
                                         Content:         "_You see things; and you say 'Why?' But I dream things that never were; and I say 'Why not?'☄️✨_"+"\r"+"***—George Bernard Shaw***",
+                                        Reference: m.Reference(),
                                 }
                                 s.ChannelMessageSendComplex(m.ChannelID, &message)
                                 //make sure we only send it once per message
