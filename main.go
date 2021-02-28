@@ -2,6 +2,7 @@ package main
 
 import (
         "encoding/json"
+        "errors"
         "flag"
         "fmt"
         "io"
@@ -12,6 +13,7 @@ import (
         "os"
         "os/signal"
         "regexp"
+        "strconv"
         "strings"
         "syscall"
         "time"
@@ -20,11 +22,14 @@ import (
 )
 const DOG_API_URL   = "https://api.thedogapi.com/"
 const CAT_API_URL   = "https://api.thecatapi.com/"
+const NASA_API_URL = "https://api.nasa.gov/planetary/"
+const XKCD_URL = "https://xkcd.com/"
 // Variables used for command line parameters
 var (
         Token string
         DogToken string
         CatToken string
+        NASAAPIKey string
 )
 
 func init() {
@@ -38,6 +43,7 @@ func main() {
         Token = os.Getenv("DISCORDTOKEN")
         DogToken = os.Getenv("DOGAPITOKEN")
         CatToken = os.Getenv("CATTOKEN")
+        NASAAPIKey = os.Getenv("NASAAPIKEY")
         // Create a new Discord session using the provided bot token.
         dg, err := discordgo.New("Bot " + Token)
         if err != nil {
@@ -194,8 +200,77 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
-
                 os.Remove("./"+dog.ID+".jpg")
+        case "nasa":
+                NASA := loadNASAImage()
+                out, err := os.Create("./"+NASA.Title+".jpg")
+                if err != nil {
+
+                }
+                defer out.Close()
+
+                resp, err := http.Get(NASA.URL)
+                // Write the body to file
+                _, err = io.Copy(out, resp.Body)
+                f, err := os.Open("./"+NASA.Title+".jpg")
+                defer f.Close()
+                var r io.Reader
+                r = f
+                file := discordgo.File{
+                        Name:        NASA.Title+".jpg",
+                        ContentType: "image/jpg",
+                        Reader:      r,
+                }
+                message := discordgo.MessageSend{
+                        Content:         "***NASA Astronomy Picture of the Day***\r***"+NASA.Title + "***\r*"+NASA.Explanation+"*" + "\r_© " + NASA.Copyright + "_",
+                        File:           &file,
+                        Reference: m.Reference(),
+                }
+                //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
+                os.Remove("./"+NASA.Title+".jpg")
+        case "xkcd":
+                var comicNum uint64 = 0
+                if(len(words) > 1 && words[1] != "") {
+                        var err error
+                        comicNum, err = strconv.ParseUint(words[1], 10, 32)
+                        if(err != nil) {
+                                //something bad happened, exit this case
+                                break
+                        }
+                }
+                comic, APIerr := xkcdImage(comicNum)
+                if(APIerr != nil) {
+                        //API failed
+                        break
+                }
+                // Create the file
+                out, err := os.Create("./"+comic.Month+comic.Day+comic.Year+".png")
+                if err != nil {
+
+                }
+                defer out.Close()
+
+                resp, err := http.Get(comic.Img)
+                // Write the body to file
+                _, err = io.Copy(out, resp.Body)
+                f, err := os.Open("./"+comic.Month+comic.Day+comic.Year+".png")
+                defer f.Close()
+                var r io.Reader
+                r = f
+                file := discordgo.File{
+                        Name:        comic.Month+comic.Day+comic.Year+".png",
+                        ContentType: "image/png",
+                        Reader:      r,
+                }
+                message := discordgo.MessageSend{
+                        Content:         "***"+comic.Title + "***\r*"+comic.Month + "-" + comic.Day + "-" + comic.Year + "* ",
+                        File:           &file,
+                        Reference: m.Reference(),
+                }
+                //s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
+                s.ChannelMessageSendComplex(m.ChannelID, &message)
+                os.Remove("./"+comic.Month+comic.Day+comic.Year+".png")
         case "moviequote":
                 //read the contents of the quotes file into memory
                 quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
@@ -327,6 +402,31 @@ type Dog []struct {
         Width  int    `json:"width"`
         Height int    `json:"height"`
 }
+
+type NASAImage struct {
+        Copyright      string `json:"copyright"`
+        Date           string `json:"date"`
+        Explanation    string `json:"explanation"`
+        Hdurl          string `json:"hdurl"`
+        MediaType      string `json:"media_type"`
+        ServiceVersion string `json:"service_version"`
+        Title          string `json:"title"`
+        URL            string `json:"url"`
+}
+
+type XKCDComic struct {
+        Month      string `json:"month"`
+        Num        int    `json:"num"`
+        Link       string `json:"link"`
+        Year       string `json:"year"`
+        News       string `json:"news"`
+        SafeTitle  string `json:"safe_title"`
+        Transcript string `json:"transcript"`
+        Alt        string `json:"alt"`
+        Img        string `json:"img"`
+        Title      string `json:"title"`
+        Day        string `json:"day"`
+}
 func loadImage() Dog {
         theDog := Dog{}
         client := &http.Client{}
@@ -350,3 +450,49 @@ func loadImage() Dog {
         return theDog
 
 }
+
+func loadNASAImage() NASAImage {
+        theImage := NASAImage{}
+        client := &http.Client{}
+        req, err := http.NewRequest("GET", NASA_API_URL+"apod", nil)
+
+        if err != nil {
+                log.Print(err)
+                os.Exit(1)
+        }
+
+        q := req.URL.Query()
+        q.Add("api_key", NASAAPIKey)
+        req.URL.RawQuery = q.Encode()
+        resp, err := client.Do(req)
+        defer resp.Body.Close()
+        json.NewDecoder(resp.Body).Decode(&theImage)
+        return theImage
+}
+func xkcdImage(comic uint64) (XKCDComic, error) {
+        comicNum := ""
+        theImage := XKCDComic{}
+        client := &http.Client{}
+        if(comic > 0) {
+                comicNum = fmt.Sprint(comic)
+        }
+        req, err := http.NewRequest("GET", XKCD_URL+comicNum+"/info.0.json", nil)
+
+        if err != nil {
+                log.Print(err)
+                os.Exit(1)
+        }
+
+        q := req.URL.Query()
+        req.URL.RawQuery = q.Encode()
+        resp, err := client.Do(req)
+
+        var APIError error
+        if(resp.StatusCode > 200) {
+                APIError = errors.New("NX")
+        }
+        defer resp.Body.Close()
+        json.NewDecoder(resp.Body).Decode(&theImage)
+        return theImage, APIError
+}
+
