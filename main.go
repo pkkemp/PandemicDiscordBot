@@ -4,6 +4,7 @@ import (
         "encoding/json"
         "flag"
         "fmt"
+        "github.com/bwmarrin/discordgo"
         "io"
         "io/ioutil"
         "log"
@@ -16,7 +17,7 @@ import (
         "syscall"
         "time"
 
-        "github.com/bwmarrin/discordgo"
+
 )
 const DOG_API_URL   = "https://api.thedogapi.com/"
 const CAT_API_URL   = "https://api.thecatapi.com/"
@@ -33,6 +34,7 @@ func init() {
         flag.Parse()
 }
 
+
 func main() {
 
         Token = os.Getenv("DISCORDTOKEN")
@@ -48,6 +50,13 @@ func main() {
         // Register the messageCreate func as a callback for MessageCreate events.
         dg.AddHandler(messageCreate)
 
+        var (
+                command = &discordgo.ApplicationCommand{
+                        Name:        "command",
+                }
+        )
+
+
         // In this example, we only care about receiving message events.
         dg.Identify.Intents = discordgo.IntentsGuildMessages
 
@@ -56,6 +65,10 @@ func main() {
         if err != nil {
                 fmt.Println("error opening connection,", err)
                 return
+        }
+
+        if _, err := dg.ApplicationCommandCreate("240910540644417537", "", command); err != nil {
+                log.Fatal(err)
         }
 
         // Wait here until CTRL-C or other term signal is received.
@@ -222,26 +235,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
                 }
                 s.ChannelMessageSendComplex(m.ChannelID, &message)
         case "quote":
-                //read the contents of the quotes file into memory
-                quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
-                if(err != nil) {
-                        break
-                }
-                var quotes QuoteData
-                err2 := json.Unmarshal(quotesFile, &quotes)
-                if(err2 != nil) {
-                        log.Println(err2)
-                }
-                rand.Seed(time.Now().UnixNano())
-                min := 0
-                max := len(quotes)
-                num := rand.Intn(max - min + 1) + min
-                //log.Println(quotes[num])
-                message := discordgo.MessageSend{
-                        Content:         "_" + quotes[num].Text + "_" +"\r"+"***—"+quotes[num].Author+"***",
-                        Reference: m.Reference(),
-                }
-                s.ChannelMessageSendComplex(m.ChannelID, &message)
+                go getQuote(s, m)
 
         case "it's":
                 if(strings.ToLower(words[1]) == "thursday") {
@@ -349,4 +343,27 @@ func loadImage() Dog {
         json.NewDecoder(resp.Body).Decode(&theDog)
         return theDog
 
+}
+
+func getQuote(s *discordgo.Session, m *discordgo.MessageCreate) {
+        //read the contents of the quotes file into memory
+        quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
+        if(err != nil) {
+                return
+        }
+        var quotes QuoteData
+        err2 := json.Unmarshal(quotesFile, &quotes)
+        if(err2 != nil) {
+                log.Println(err2)
+        }
+        rand.Seed(time.Now().UnixNano())
+        min := 0
+        max := len(quotes)
+        num := rand.Intn(max - min + 1) + min
+        //log.Println(quotes[num])
+        message := discordgo.MessageSend{
+                Content:         "_" + quotes[num].Text + "_" +"\r"+"***—"+quotes[num].Author+"***",
+                Reference: m.Reference(),
+        }
+        s.ChannelMessageSendComplex(m.ChannelID, &message)
 }
