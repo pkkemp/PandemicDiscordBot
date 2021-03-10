@@ -43,42 +43,60 @@ func init() {
 
 func findAppointments(dg *discordgo.Session) {
 	for {
-		fmt.Println("Infinite Loop 1")
+		const VAXCHANNEL = "819118034903236628"
+			c := colly.NewCollector()
 
-	c := colly.NewCollector()
+			// Find and visit all links
+			c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+				rawURL := e.Attr("href")
+				url, _ := url2.Parse(rawURL)
+				path := url.Path
+				pathSubstrings := strings.Split(path, "/")
+				if(url.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
+					e.Request.Visit(e.Attr("href"))
 
-	// Find and visit all links
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		rawURL := e.Attr("href")
-		url, _ := url2.Parse(rawURL)
-		path := url.Path
-		pathSubstrings := strings.Split(path, "/")
-		if(url.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
-			e.Request.Visit(e.Attr("href"))
+				}
 
-		}
+			})
 
-	})
+			c.OnRequest(func(r *colly.Request) {
+				fmt.Println("Visiting", r.URL)
+			})
 
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL)
-	})
+			c.OnHTML("td.SUGtable", func(table *colly.HTMLElement) {
+				table.ForEachWithBreak("span.SUGbigbold", func(_ int, elem *colly.HTMLElement) bool {
+					if strings.Contains(elem.Text, "slots filled") {
+						fmt.Println(elem.Text)
+					}
+					//vaccineRole := discordgo.Role{
+					//	ID:          "819282075164737577",
+					//	Name:        "Vaccine",
+					//}
+					if strings.Contains(elem.Text, "slots filled") {
+						messageText := "I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
+						//_, _ = dg.ChannelMessageSend("814386260771864626", messageText)
+						mentions := discordgo.MessageAllowedMentions{
+							Roles: []string{"819282075164737577"},
+						}
+						message := discordgo.MessageSend{
+							Content:   messageText,
+							AllowedMentions: &mentions,
+						}
+						_, _ = dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
 
-	c.OnHTML("span.SUGsignups", func(table *colly.HTMLElement) {
-		if(table.Text != "Already filled") {
-			messageText := "I've observed a new vaccination appointment available at \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
-			_, _ = dg.ChannelMessageSend("819118034903236628", messageText)
+						fmt.Println(messageText)
+						fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
+						fmt.Println(table.Text)
+						fmt.Println("---")
+						return false
+					}
+					return false
+				})
+			})
 
-			fmt.Println(messageText)
-			fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
-			fmt.Println(table.Text)
-			fmt.Println("---")
-		}
-	})
-
-	c.Visit("https://www.vaxokc.com/")
-	time.Sleep(time.Minute)
-	}
+			c.Visit("https://www.vaxokc.com/")
+			time.Sleep(time.Minute)
+			}
 }
 
 func main() {
@@ -286,7 +304,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			break
 		}
 		// Create the file
-		out, err := os.Create("./" + comic.Month + comic.Day + comic.Year + ".png")
+		out, err := os.Create("/img/" + comic.Month + comic.Day + comic.Year + ".png")
 		if err != nil {
 
 		}
@@ -295,7 +313,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		resp, err := http.Get(comic.Img)
 		// Write the body to file
 		_, err = io.Copy(out, resp.Body)
-		f, err := os.Open("./" + comic.Month + comic.Day + comic.Year + ".png")
+		f, err := os.Open("/img/" + comic.Month + comic.Day + comic.Year + ".png")
 		defer f.Close()
 		var r io.Reader
 		r = f
@@ -311,10 +329,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 		s.ChannelMessageSendComplex(m.ChannelID, &message)
-		os.Remove("./" + comic.Month + comic.Day + comic.Year + ".png")
+		os.Remove("/img/" + comic.Month + comic.Day + comic.Year + ".png")
 	case "moviequote":
 		//read the contents of the quotes file into memory
-		quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
+		quotesFile, err := ioutil.ReadFile("/img/json-tv-quotes/quotes.json")
 		if err != nil {
 			break
 		}
