@@ -158,7 +158,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		allRoles, _ := s.GuildRoles(m.GuildID)
 		name := strings.Join(words[1:], " ")
 		for _, role := range allRoles {
-			if role.Name == name {
+			if strings.ToLower(role.Name) == strings.ToLower(name) {
 				//TODO fix the permissions here and add the rest of discord bitwise flags
 				//right now the || role.Permissions > 0 will always make this statement false if the role has associated permissions
 				if role.Permissions > 0 ||
@@ -178,7 +178,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		allRoles, _ := s.GuildRoles(m.GuildID)
 		name := strings.Join(words[1:], " ")
 		for _, role := range allRoles {
-			if role.Name == name {
+			if strings.ToLower(role.Name) == strings.ToLower(name) {
 				//TODO fix the permissions here and add the rest of discord bitwise flags
 				//right now the || role.Permissions > 0 will always make this statement false if the role has associated permissions
 				if role.Permissions > 0 ||
