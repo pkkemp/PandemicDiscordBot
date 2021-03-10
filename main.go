@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gocolly/colly/v2"
-	url2 "net/url"
 	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	url2 "net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -94,7 +94,7 @@ func main() {
         }
 
 	// Register the messageCreate func as a callback for MessageCreate events.
-	go findAppointments(dg)
+	//go findAppointments(dg)
 	dg.AddHandler(messageCreate)
 
 
