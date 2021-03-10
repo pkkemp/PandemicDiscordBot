@@ -94,7 +94,7 @@ func main() {
         }
 
 	// Register the messageCreate func as a callback for MessageCreate events.
-	//go findAppointments(dg)
+	go findAppointments(dg)
 	dg.AddHandler(messageCreate)
 
 
