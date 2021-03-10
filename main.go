@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/gocolly/colly/v2"
+	url2 "net/url"
 	"io"
 	"io/ioutil"
 	"log"
@@ -39,21 +41,63 @@ func init() {
 	flag.Parse()
 }
 
-func main() {
+func findAppointments(dg *discordgo.Session) {
+	for {
+		fmt.Println("Infinite Loop 1")
 
-	Token = os.Getenv("DISCORDTOKEN")
-	DogToken = os.Getenv("DOGAPITOKEN")
-	CatToken = os.Getenv("CATTOKEN")
-	NASAAPIKey = os.Getenv("NASAAPIKEY")
-	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + Token)
-	if err != nil {
-		fmt.Println("error creating Discord session,", err)
-		return
+	c := colly.NewCollector()
+
+	// Find and visit all links
+	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+		rawURL := e.Attr("href")
+		url, _ := url2.Parse(rawURL)
+		path := url.Path
+		pathSubstrings := strings.Split(path, "/")
+		if(url.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
+			e.Request.Visit(e.Attr("href"))
+
+		}
+
+	})
+
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL)
+	})
+
+	c.OnHTML("span.SUGsignups", func(table *colly.HTMLElement) {
+		if(table.Text != "Already filled") {
+			messageText := "I've observed a new vaccination appointment available at \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
+			_, _ = dg.ChannelMessageSend("814386260771864626", messageText)
+
+			fmt.Println(messageText)
+			fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
+			fmt.Println(table.Text)
+			fmt.Println("---")
+		}
+	})
+
+	c.Visit("https://www.vaxokc.com/")
+	time.Sleep(time.Minute)
 	}
+}
+
+func main() {
+        Token = os.Getenv("DISCORDTOKEN")
+        DogToken = os.Getenv("DOGAPITOKEN")
+        CatToken = os.Getenv("CATTOKEN")
+        NASAAPIKey = os.Getenv("NASAAPIKEY")
+        // Create a new Discord session using the provided bot token.
+        dg, err := discordgo.New("Bot " + Token)
+        if err != nil {
+                fmt.Println("error creating Discord session,", err)
+                return
+        }
 
 	// Register the messageCreate func as a callback for MessageCreate events.
+	//go findAppointments(dg)
 	dg.AddHandler(messageCreate)
+
+
 	//
 	//var (
 	//        command = &discordgo.ApplicationCommand{
