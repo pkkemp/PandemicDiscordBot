@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/gocolly/colly/v2"
+	"github.com/gocolly/colly"
 	"io"
 	"io/ioutil"
 	"log"
@@ -67,7 +67,7 @@ func findAppointments(dg *discordgo.Session) {
 	c.OnHTML("span.SUGsignups", func(table *colly.HTMLElement) {
 		if(table.Text != "Already filled") {
 			messageText := "I've observed a new vaccination appointment available at \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
-			_, _ = dg.ChannelMessageSend("814386260771864626", messageText)
+			_, _ = dg.ChannelMessageSend("819118034903236628", messageText)
 
 			fmt.Println(messageText)
 			fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
@@ -94,31 +94,19 @@ func main() {
         }
 
 	// Register the messageCreate func as a callback for MessageCreate events.
-	//go findAppointments(dg)
+	go findAppointments(dg)
 	dg.AddHandler(messageCreate)
 
 
-	//
-	//var (
-	//        command = &discordgo.ApplicationCommand{
-	//                Name:        "command",
-	//        }
-	//)
-	//
-	//
-	//// In this example, we only care about receiving message events.
-	//dg.Identify.Intents = discordgo.IntentsGuildMessages
-	//
-	//// Open a websocket connection to Discord and begin listening.
-	//err = dg.Open()
-	//if err != nil {
-	//        fmt.Println("error opening connection,", err)
-	//        return
-	//}
-	//
-	//if _, err := dg.ApplicationCommandCreate("240910540644417537", "", command); err != nil {
-	//        log.Fatal(err)
-	//}
+	// In this example, we only care about receiving message events.
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	// Open a websocket connection to Discord and begin listening.
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
