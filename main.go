@@ -44,6 +44,7 @@ func init() {
 func findAppointments(dg *discordgo.Session) {
 	for {
 		const VAXCHANNEL = "819118034903236628"
+		const VACCINEROLE = "819282075164737577"
 			c := colly.NewCollector()
 
 			// Find and visit all links
@@ -73,7 +74,7 @@ func findAppointments(dg *discordgo.Session) {
 					//	Name:        "Vaccine",
 					//}
 					if strings.Contains(elem.Text, "slots filled") {
-						messageText := "I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
+						messageText := "<@&" + VACCINEROLE + "> I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
 						message := discordgo.MessageSend{
 							Content:   messageText,
 						}
