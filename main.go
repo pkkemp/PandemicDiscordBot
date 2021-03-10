@@ -74,16 +74,15 @@ func findAppointments(dg *discordgo.Session) {
 					//}
 					if strings.Contains(elem.Text, "slots filled") {
 						messageText := "I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
-						//_, _ = dg.ChannelMessageSend("814386260771864626", messageText)
-						mentions := discordgo.MessageAllowedMentions{
-							Roles: []string{"819282075164737577"},
-						}
 						message := discordgo.MessageSend{
 							Content:   messageText,
-							AllowedMentions: &mentions,
 						}
-						_, _ = dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
-
+						sendComplex, err := dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
+						log.Print(sendComplex)
+						if err != nil {
+							log.Print(err)
+						}
+						//dg.ChannelMessageSend(VAXCHANNEL, messageText)
 						fmt.Println(messageText)
 						fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
 						fmt.Println(table.Text)
