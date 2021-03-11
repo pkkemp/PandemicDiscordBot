@@ -12,7 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	url2 "net/url"
+	url "net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -45,78 +45,70 @@ func findAppointments(dg *discordgo.Session) {
 	for {
 		const VAXCHANNEL = "819118034903236628"
 		const VACCINEROLE = "819282075164737577"
-			c := colly.NewCollector()
+		c := colly.NewCollector()
 
-			// Find and visit all links
-			c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-				rawURL := e.Attr("href")
-				url, _ := url2.Parse(rawURL)
-				path := url.Path
-				pathSubstrings := strings.Split(path, "/")
-				if(url.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
-					e.Request.Visit(e.Attr("href"))
+		// Find and visit all links
+		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+			rawURL := e.Attr("href")
+			siteURL, _ := url.Parse(rawURL)
+			path := siteURL.Path
+			pathSubstrings := strings.Split(path, "/")
+			if(siteURL.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
+				e.Request.Visit(e.Attr("href"))
 
-				}
-
-			})
-
-			c.OnRequest(func(r *colly.Request) {
-				fmt.Println("Visiting", r.URL)
-			})
-
-			c.OnHTML("td.SUGtable", func(table *colly.HTMLElement) {
-				table.ForEachWithBreak("span.SUGbigbold", func(_ int, elem *colly.HTMLElement) bool {
-					if strings.Contains(elem.Text, "slots filled") {
-						fmt.Println(elem.Text)
-					}
-					//vaccineRole := discordgo.Role{
-					//	ID:          "819282075164737577",
-					//	Name:        "Vaccine",
-					//}
-					if strings.Contains(elem.Text, "slots filled") {
-						messageText := "<@&" + VACCINEROLE + "> I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
-						message := discordgo.MessageSend{
-							Content:   messageText,
-						}
-						sendComplex, err := dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
-						log.Print(sendComplex)
-						if err != nil {
-							log.Print(err)
-						}
-						//dg.ChannelMessageSend(VAXCHANNEL, messageText)
-						fmt.Println(messageText)
-						fmt.Println(table.Request.URL.Host + table.Request.URL.Path)
-						fmt.Println(table.Text)
-						fmt.Println("---")
-						return false
-					}
-					return false
-				})
-			})
-
-			c.Visit("https://www.vaxokc.com/")
-			time.Sleep(time.Minute)
 			}
+
+		})
+
+		c.OnRequest(func(r *colly.Request) {
+			fmt.Println("Visiting", r.URL)
+		})
+
+		c.OnHTML("td.SUGtable", func(table *colly.HTMLElement) {
+			table.ForEachWithBreak("span.SUGbigbold", func(_ int, elem *colly.HTMLElement) bool {
+				if strings.Contains(elem.Text, "slots filled") {
+					messageText := "<@&" + VACCINEROLE + "> I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
+					message := discordgo.MessageSend{
+						Content:   messageText,
+					}
+					_, err := dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
+					if err != nil {
+						log.Print(err)
+					}
+					//we return false here to prevent the for loop from continuing
+					//to search for available slots on this page
+					return false
+				}
+				return false
+			})
+		})
+
+		c.Visit("https://prestonkemp.com/test-1.html")
+		time.Sleep(time.Minute)
+		}
 }
 
 func main() {
-        Token = os.Getenv("DISCORDTOKEN")
-        DogToken = os.Getenv("DOGAPITOKEN")
-        CatToken = os.Getenv("CATTOKEN")
-        NASAAPIKey = os.Getenv("NASAAPIKEY")
-        // Create a new Discord session using the provided bot token.
-        dg, err := discordgo.New("Bot " + Token)
-        if err != nil {
-                fmt.Println("error creating Discord session,", err)
-                return
-        }
+	//get our API keys from the OS env vars
+	Token = os.Getenv("DISCORDTOKEN")
+	DogToken = os.Getenv("DOGAPITOKEN")
+	CatToken = os.Getenv("CATTOKEN")
+	NASAAPIKey = os.Getenv("NASAAPIKEY")
 
-	// Register the messageCreate func as a callback for MessageCreate events.
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + Token)
+	if err != nil {
+			fmt.Println("error creating Discord session,", err)
+			return
+	}
+
+	//start the findAppointments function in a goroutine
 	go findAppointments(dg)
+	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 
 
-	// In this example, we only care about receiving message events.
+	// Set the Discord gateway to notify us when messages are sent
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
 	// Open a websocket connection to Discord and begin listening.
@@ -142,15 +134,14 @@ func main() {
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	//messageContent := strings.ToLower(m.Content)
-	//replace weird iOS single quotes/apostrophe
+	// replace weird iOS single quotes/apostrophe
 	messageContent := strings.Replace(m.Content, "’", "'", -1)
-	//split the words into an array
+	// split the words into an array
 	words := strings.Split(messageContent, " ")
+	// switch on the first word of the message
 	switch strings.ToLower(words[0]) {
 	case "ping":
 		s.ChannelMessageSend(m.ChannelID, "Pong!")
@@ -236,7 +227,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Create the file
 		out, err := os.Create("./" + dog.ID + ".jpg")
 		if err != nil {
-
+			log.Print(err)
+			break
 		}
 		defer out.Close()
 
@@ -244,6 +236,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Write the body to file
 		_, err = io.Copy(out, resp.Body)
 		f, err := os.Open("./" + dog.ID + ".jpg")
+		if err != nil {
+			//something bad happened, exit this case
+			log.Print(err)
+			break
+		}
 		defer f.Close()
 		var r io.Reader
 		r = f
@@ -257,14 +254,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			File:      &file,
 			Reference: m.Reference(),
 		}
-		//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 		s.ChannelMessageSendComplex(m.ChannelID, &message)
+		// delete the image from disk now that we've sent it
 		os.Remove("./" + dog.ID + ".jpg")
 	case "nasa":
 		NASA := loadNASAImage()
 		out, err := os.Create("./" + NASA.Title + ".jpg")
 		if err != nil {
-
+			//something bad happened, exit this case
+			log.Print(err)
+			break
 		}
 		defer out.Close()
 
@@ -272,6 +271,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// Write the body to file
 		_, err = io.Copy(out, resp.Body)
 		f, err := os.Open("./" + NASA.Title + ".jpg")
+		if err != nil {
+			//something bad happened, exit this case
+			log.Print(err)
+			break
+		}
 		defer f.Close()
 		var r io.Reader
 		r = f
@@ -295,6 +299,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			comicNum, err = strconv.ParseUint(words[1], 10, 32)
 			if err != nil {
 				//something bad happened, exit this case
+				log.Print(err)
 				break
 			}
 		}
@@ -304,16 +309,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			break
 		}
 		// Create the file
-		out, err := os.Create("/img/" + comic.Month + comic.Day + comic.Year + ".png")
+		out, err := os.Create("./" + comic.Month + comic.Day + comic.Year + ".png")
 		if err != nil {
-
+			//something bad happened, exit this case
+			log.Print(err)
+			break
 		}
 		defer out.Close()
 
 		resp, err := http.Get(comic.Img)
 		// Write the body to file
 		_, err = io.Copy(out, resp.Body)
-		f, err := os.Open("/img/" + comic.Month + comic.Day + comic.Year + ".png")
+		f, err := os.Open("./" + comic.Month + comic.Day + comic.Year + ".png")
 		defer f.Close()
 		var r io.Reader
 		r = f
@@ -329,17 +336,21 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 		s.ChannelMessageSendComplex(m.ChannelID, &message)
-		os.Remove("/img/" + comic.Month + comic.Day + comic.Year + ".png")
+		os.Remove("./" + comic.Month + comic.Day + comic.Year + ".png")
 	case "moviequote":
 		//read the contents of the quotes file into memory
-		quotesFile, err := ioutil.ReadFile("/img/json-tv-quotes/quotes.json")
+		quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
 		if err != nil {
+			//something bad happened, exit this case
+			log.Print(err)
 			break
 		}
 		var quotes MovieQuotes
 		err2 := json.Unmarshal(quotesFile, &quotes)
 		if err2 != nil {
-			log.Println(err2)
+			//something bad happened, exit this case
+			log.Print(err2)
+			break
 		}
 		rand.Seed(time.Now().UnixNano())
 		min := 0
@@ -385,6 +396,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSendComplex(m.ChannelID, &message)
 		}
 	default:
+		// don't run the last case
+		break
 		words := strings.Split(messageContent, " ")
 		re, err := regexp.Compile(`[^\w]`)
 		if err != nil {
