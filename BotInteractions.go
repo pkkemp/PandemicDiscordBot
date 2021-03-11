@@ -21,9 +21,7 @@ func loadDogImage() Dog {
 		log.Print(err)
 		os.Exit(1)
 	}
-
 	req.Header.Set("X-API-KEY", DogToken)
-
 	q := req.URL.Query()
 	q.Add("has_breeds", "true")
 	q.Add("mime_types", "jpg,png")
@@ -34,7 +32,6 @@ func loadDogImage() Dog {
 	defer resp.Body.Close()
 	json.NewDecoder(resp.Body).Decode(&theDog)
 	return theDog
-
 }
 
 func getQuote(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -48,11 +45,12 @@ func getQuote(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err2 != nil {
 		log.Println(err2)
 	}
+	//generate a random number
 	rand.Seed(time.Now().UnixNano())
 	min := 0
 	max := len(quotes)
 	num := rand.Intn(max-min+1) + min
-	//log.Println(quotes[num])
+	//build the message and select the random quote from our random number
 	message := discordgo.MessageSend{
 		Content:   "_" + quotes[num].Text + "_" + "\r" + "***—" + quotes[num].Author + "***",
 		Reference: m.Reference(),
@@ -64,12 +62,10 @@ func loadNASAImage() NASAImage {
 	theImage := NASAImage{}
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", NASA_API_URL+"apod", nil)
-
 	if err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
-
 	q := req.URL.Query()
 	q.Add("api_key", NASAAPIKey)
 	req.URL.RawQuery = q.Encode()
@@ -87,7 +83,6 @@ func xkcdImage(comic uint64) (XKCDComic, error) {
 		comicNum = fmt.Sprint(comic)
 	}
 	req, err := http.NewRequest("GET", XKCD_URL+comicNum+"/info.0.json", nil)
-
 	if err != nil {
 		log.Print(err)
 		os.Exit(1)
@@ -101,6 +96,7 @@ func xkcdImage(comic uint64) (XKCDComic, error) {
 	if resp.StatusCode > 200 {
 		APIError = errors.New("NX")
 	}
+
 	defer resp.Body.Close()
 	json.NewDecoder(resp.Body).Decode(&theImage)
 	return theImage, APIError

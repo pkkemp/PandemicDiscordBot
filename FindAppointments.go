@@ -12,9 +12,7 @@ import (
 
 func findAppointments(dg *discordgo.Session) {
 	for {
-
 		c := colly.NewCollector()
-
 		// Find and visit all links
 		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 			rawURL := e.Attr("href")
