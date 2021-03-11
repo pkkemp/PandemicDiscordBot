@@ -45,6 +45,7 @@ func findAppointments(dg *discordgo.Session) {
 	for {
 		const VAXCHANNEL = "819118034903236628"
 		const VACCINEROLE = "819282075164737577"
+		const VAXOKCURL = "https://www.vaxokc.com/"
 		c := colly.NewCollector()
 
 		// Find and visit all links
@@ -83,7 +84,7 @@ func findAppointments(dg *discordgo.Session) {
 			})
 		})
 
-		c.Visit("https://prestonkemp.com/test-1.html")
+		c.Visit(VAXOKCURL)
 		time.Sleep(time.Minute)
 		}
 }
