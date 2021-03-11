@@ -2,17 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/gocolly/colly"
 	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	url "net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -26,6 +23,11 @@ const DOG_API_URL = "https://api.thedogapi.com/"
 const CAT_API_URL = "https://api.thecatapi.com/"
 const NASA_API_URL = "https://api.nasa.gov/planetary/"
 const XKCD_URL = "https://xkcd.com/"
+
+//findAppointment constants
+const VAXCHANNEL = "819118034903236628"
+const VACCINEROLE = "819282075164737577"
+const VAXOKCURL = "https://www.vaxokc.com/"
 
 // Variables used for command line parameters
 var (
@@ -41,53 +43,6 @@ func init() {
 	flag.Parse()
 }
 
-func findAppointments(dg *discordgo.Session) {
-	for {
-		const VAXCHANNEL = "819118034903236628"
-		const VACCINEROLE = "819282075164737577"
-		const VAXOKCURL = "https://www.vaxokc.com/"
-		c := colly.NewCollector()
-
-		// Find and visit all links
-		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-			rawURL := e.Attr("href")
-			siteURL, _ := url.Parse(rawURL)
-			path := siteURL.Path
-			pathSubstrings := strings.Split(path, "/")
-			if(siteURL.Host == "www.signupgenius.com" && pathSubstrings[1] == "go"){
-				e.Request.Visit(e.Attr("href"))
-
-			}
-
-		})
-
-		c.OnRequest(func(r *colly.Request) {
-			fmt.Println("Visiting", r.URL)
-		})
-
-		c.OnHTML("td.SUGtable", func(table *colly.HTMLElement) {
-			table.ForEachWithBreak("span.SUGbigbold", func(_ int, elem *colly.HTMLElement) bool {
-				if strings.Contains(elem.Text, "slots filled") {
-					messageText := "<@&" + VACCINEROLE + "> I've observed an available vaccination appointment at: \n" + table.Request.URL.Scheme + "://" + table.Request.URL.Host + table.Request.URL.Path
-					message := discordgo.MessageSend{
-						Content:   messageText,
-					}
-					_, err := dg.ChannelMessageSendComplex(VAXCHANNEL, &message)
-					if err != nil {
-						log.Print(err)
-					}
-					//we return false here to prevent the for loop from continuing
-					//to search for available slots on this page
-					return false
-				}
-				return false
-			})
-		})
-
-		c.Visit(VAXOKCURL)
-		time.Sleep(time.Minute)
-		}
-}
 
 func main() {
 	//get our API keys from the OS env vars
@@ -223,7 +178,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "pong":
 		s.ChannelMessageSend(m.ChannelID, "Ping!")
 	case "woof":
-		Dogs := loadImage()
+		Dogs := loadDogImage()
 		dog := Dogs[0]
 		// Create the file
 		out, err := os.Create("./" + dog.ID + ".jpg")
@@ -420,156 +375,3 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-type QuoteData []struct {
-	Author string `json:"author"`
-	Text   string `json:"text"`
-}
-
-type MovieQuotes []struct {
-	Type     string `json:"type"`
-	Language string `json:"language"`
-	Quote    string `json:"quote"`
-	Author   string `json:"author,omitempty"`
-	Source   string `json:"source,omitempty"`
-}
-
-type Dog []struct {
-	Breeds []struct {
-		Weight struct {
-			Imperial string `json:"imperial"`
-			Metric   string `json:"metric"`
-		} `json:"weight"`
-		Height struct {
-			Imperial string `json:"imperial"`
-			Metric   string `json:"metric"`
-		} `json:"height"`
-		ID               int    `json:"id"`
-		Name             string `json:"name"`
-		BredFor          string `json:"bred_for"`
-		BreedGroup       string `json:"breed_group"`
-		LifeSpan         string `json:"life_span"`
-		Temperament      string `json:"temperament"`
-		ReferenceImageID string `json:"reference_image_id"`
-	} `json:"breeds"`
-	ID     string `json:"id"`
-	URL    string `json:"url"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
-}
-
-type NASAImage struct {
-	Copyright      string `json:"copyright"`
-	Date           string `json:"date"`
-	Explanation    string `json:"explanation"`
-	Hdurl          string `json:"hdurl"`
-	MediaType      string `json:"media_type"`
-	ServiceVersion string `json:"service_version"`
-	Title          string `json:"title"`
-	URL            string `json:"url"`
-}
-
-type XKCDComic struct {
-	Month      string `json:"month"`
-	Num        int    `json:"num"`
-	Link       string `json:"link"`
-	Year       string `json:"year"`
-	News       string `json:"news"`
-	SafeTitle  string `json:"safe_title"`
-	Transcript string `json:"transcript"`
-	Alt        string `json:"alt"`
-	Img        string `json:"img"`
-	Title      string `json:"title"`
-	Day        string `json:"day"`
-}
-
-func loadImage() Dog {
-	theDog := Dog{}
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", DOG_API_URL+"v1/images/search", nil)
-	if err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-
-	req.Header.Set("X-API-KEY", DogToken)
-
-	q := req.URL.Query()
-	q.Add("has_breeds", "true")
-	q.Add("mime_types", "jpg,png")
-	q.Add("size", "small")
-	q.Add("limit", "1")
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-	json.NewDecoder(resp.Body).Decode(&theDog)
-	return theDog
-
-}
-
-func getQuote(s *discordgo.Session, m *discordgo.MessageCreate) {
-	//read the contents of the quotes file into memory
-	quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
-	if err != nil {
-		return
-	}
-	var quotes QuoteData
-	err2 := json.Unmarshal(quotesFile, &quotes)
-	if err2 != nil {
-		log.Println(err2)
-	}
-	rand.Seed(time.Now().UnixNano())
-	min := 0
-	max := len(quotes)
-	num := rand.Intn(max-min+1) + min
-	//log.Println(quotes[num])
-	message := discordgo.MessageSend{
-		Content:   "_" + quotes[num].Text + "_" + "\r" + "***—" + quotes[num].Author + "***",
-		Reference: m.Reference(),
-	}
-	s.ChannelMessageSendComplex(m.ChannelID, &message)
-}
-
-func loadNASAImage() NASAImage {
-	theImage := NASAImage{}
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", NASA_API_URL+"apod", nil)
-
-	if err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-
-	q := req.URL.Query()
-	q.Add("api_key", NASAAPIKey)
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-	json.NewDecoder(resp.Body).Decode(&theImage)
-	return theImage
-}
-func xkcdImage(comic uint64) (XKCDComic, error) {
-	comicNum := ""
-	theImage := XKCDComic{}
-	client := &http.Client{}
-	if comic > 0 {
-		comicNum = fmt.Sprint(comic)
-	}
-	req, err := http.NewRequest("GET", XKCD_URL+comicNum+"/info.0.json", nil)
-
-	if err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-
-	q := req.URL.Query()
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-
-	var APIError error
-	if resp.StatusCode > 200 {
-		APIError = errors.New("NX")
-	}
-	defer resp.Body.Close()
-	json.NewDecoder(resp.Body).Decode(&theImage)
-	return theImage, APIError
-}
