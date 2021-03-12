@@ -1,5 +1,7 @@
 package main
 
+import "encoding/xml"
+
 type QuoteData []struct {
 	Author string `json:"author"`
 	Text   string `json:"text"`
@@ -60,5 +62,63 @@ type XKCDComic struct {
 	Img        string `json:"img"`
 	Title      string `json:"title"`
 	Day        string `json:"day"`
+}
+
+type NOAAAlertFeed struct {
+	XMLName   xml.Name `xml:"feed"`
+	Text      string   `xml:",chardata"`
+	Xmlns     string   `xml:"xmlns,attr"`
+	Cap       string   `xml:"cap,attr"`
+	Ha        string   `xml:"ha,attr"`
+	ID        string   `xml:"id"`
+	Logo      string   `xml:"logo"`
+	Generator string   `xml:"generator"`
+	Updated   string   `xml:"updated"`
+	Author    struct {
+		Text string `xml:",chardata"`
+		Name string `xml:"name"`
+	} `xml:"author"`
+	Title string `xml:"title"`
+	Link  struct {
+		Text string `xml:",chardata"`
+		Href string `xml:"href,attr"`
+	} `xml:"link"`
+	Entry []struct {
+		Text      string `xml:",chardata"`
+		ID        string `xml:"id"`
+		Updated   string `xml:"updated"`
+		Published string `xml:"published"`
+		Author    struct {
+			Text string `xml:",chardata"`
+			Name string `xml:"name"`
+		} `xml:"author"`
+		Title string `xml:"title"`
+		Link  struct {
+			Text string `xml:",chardata"`
+			Href string `xml:"href,attr"`
+		} `xml:"link"`
+		Summary   string `xml:"summary"`
+		Event     string `xml:"event"`
+		Effective string `xml:"effective"`
+		Expires   string `xml:"expires"`
+		Status    string `xml:"status"`
+		MsgType   string `xml:"msgType"`
+		Category  string `xml:"category"`
+		Urgency   string `xml:"urgency"`
+		Severity  string `xml:"severity"`
+		Certainty string `xml:"certainty"`
+		AreaDesc  string `xml:"areaDesc"`
+		Polygon   string `xml:"polygon"`
+		Geocode   struct {
+			Text      string   `xml:",chardata"`
+			ValueName []string `xml:"valueName"`
+			Value     []string `xml:"value"`
+		} `xml:"geocode"`
+		Parameter struct {
+			Text      string `xml:",chardata"`
+			ValueName string `xml:"valueName"`
+			Value     string `xml:"value"`
+		} `xml:"parameter"`
+	} `xml:"entry"`
 }
 

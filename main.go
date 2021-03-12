@@ -324,7 +324,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSendComplex(m.ChannelID, &message)
 	case "quote":
 		go getQuote(s, m)
-
 	case "it's":
 		if strings.ToLower(words[1]) == "thursday" {
 			weekday := time.Now().Weekday()
@@ -351,6 +350,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 			s.ChannelMessageSendComplex(m.ChannelID, &message)
 		}
+	case "weather":
+		s.ChannelMessageSend(m.ChannelID, "There are currently " + strconv.Itoa(getActiveAlertCount()) + " active watches and warnings.")
+		alerts := getActiveAlerts()
+		ZONE_CODES_MONITORED := []string{"OKZ015", "AKZ125", "ARC035"}
+		filteredAlerts := searchAlertsByZoneCode(ZONE_CODES_MONITORED, alerts)
+		messages := constructAlertDiscordMessages(filteredAlerts)
+		bulkSendDiscordMessages(messages, s,  m.ChannelID)
+
 	default:
 		// don't run the last case
 		break

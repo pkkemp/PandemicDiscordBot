@@ -13,6 +13,19 @@ import (
 	"time"
 )
 
+func fillChannelIDForMessages(messages []discordgo.Message, channelID string) []discordgo.Message {
+	for _, message := range messages {
+		message.ChannelID = channelID
+	}
+	return messages
+}
+
+func bulkSendDiscordMessages(messages []discordgo.MessageSend, dg *discordgo.Session, channelID string) {
+	for _, message := range messages {
+		dg.ChannelMessageSendComplex(channelID, &message)
+	}
+}
+
 func loadDogImage() Dog {
 	theDog := Dog{}
 	client := &http.Client{}
