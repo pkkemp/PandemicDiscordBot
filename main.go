@@ -216,7 +216,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "nasa":
 		NASA := loadNASAImage()
 		//create the file
-		//out, err := os.Create("./" + NASA.Title + ".jpg")
 		tempFile, err  := ioutil.TempFile("", NASA.Title + ".*.jpg")
 
 		if err != nil {
