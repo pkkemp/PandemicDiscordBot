@@ -181,17 +181,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Dogs := loadDogImage()
 		dog := Dogs[0]
 		// Create the file
-		out, err := os.Create("./" + dog.ID + ".jpg")
+		tempFile, err  := ioutil.TempFile("", dog.ID + ".*.jpg")
 		if err != nil {
 			log.Print(err)
 			break
 		}
-		defer out.Close()
+		defer os.Remove(tempFile.Name()) // clean up
 
 		resp, err := http.Get(dog.URL)
 		// Write the body to file
-		_, err = io.Copy(out, resp.Body)
-		f, err := os.Open("./" + dog.ID + ".jpg")
+		_, err = io.Copy(tempFile, resp.Body)
+		f, err := os.Open(tempFile.Name())
 		if err != nil {
 			//something bad happened, exit this case
 			log.Print(err)
@@ -215,18 +215,21 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		os.Remove("./" + dog.ID + ".jpg")
 	case "nasa":
 		NASA := loadNASAImage()
-		out, err := os.Create("./" + NASA.Title + ".jpg")
+		//create the file
+		//out, err := os.Create("./" + NASA.Title + ".jpg")
+		tempFile, err  := ioutil.TempFile("", NASA.Title + ".*.jpg")
+
 		if err != nil {
 			//something bad happened, exit this case
 			log.Print(err)
 			break
 		}
-		defer out.Close()
+		defer os.Remove(tempFile.Name()) // clean up
 
 		resp, err := http.Get(NASA.URL)
 		// Write the body to file
-		_, err = io.Copy(out, resp.Body)
-		f, err := os.Open("./" + NASA.Title + ".jpg")
+		_, err = io.Copy(tempFile, resp.Body)
+		f, err := os.Open(tempFile.Name())
 		if err != nil {
 			//something bad happened, exit this case
 			log.Print(err)
@@ -245,7 +248,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			File:      &file,
 			Reference: m.Reference(),
 		}
-		//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 		s.ChannelMessageSendComplex(m.ChannelID, &message)
 		os.Remove("./" + NASA.Title + ".jpg")
 	case "xkcd":
@@ -265,18 +267,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			break
 		}
 		// Create the file
-		out, err := os.Create("./" + comic.Month + comic.Day + comic.Year + ".png")
+		//out, err := os.Create("./" + comic.Month + comic.Day + comic.Year + ".png")
+		tempFile, err  := ioutil.TempFile("", comic.Month + comic.Day + comic.Year +  ".*.png")
 		if err != nil {
 			//something bad happened, exit this case
 			log.Print(err)
 			break
 		}
-		defer out.Close()
+		defer os.Remove(tempFile.Name()) // clean up
 
 		resp, err := http.Get(comic.Img)
 		// Write the body to file
-		_, err = io.Copy(out, resp.Body)
-		f, err := os.Open("./" + comic.Month + comic.Day + comic.Year + ".png")
+		_, err = io.Copy(tempFile, resp.Body)
+		f, err := os.Open(tempFile.Name())
 		defer f.Close()
 		var r io.Reader
 		r = f
