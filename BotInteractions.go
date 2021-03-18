@@ -49,7 +49,7 @@ func loadDogImage() Dog {
 
 func getQuote(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//read the contents of the quotes file into memory
-	quotesFile, err := ioutil.ReadFile("./quotes/quotes.json")
+	quotesFile, err := ioutil.ReadFile("/data/quotes/quotes.json")
 	if err != nil {
 		return
 	}

@@ -29,5 +29,7 @@ RUN cp /build/main .
 # Export necessary port
 #EXPOSE 3000
 
+ADD . /data
+
 # Command to run when starting the container
 CMD ["/dist/main"]

@@ -297,7 +297,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		os.Remove("./" + comic.Month + comic.Day + comic.Year + ".png")
 	case "moviequote":
 		//read the contents of the quotes file into memory
-		quotesFile, err := ioutil.ReadFile("./json-tv-quotes/quotes.json")
+		quotesFile, err := ioutil.ReadFile("/data/json-tv-quotes/quotes.json")
 		if err != nil {
 			//something bad happened, exit this case
 			log.Print(err)
@@ -327,15 +327,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "quote":
 		go getQuote(s, m)
 	case "it's":
-		if strings.ToLower(words[1]) == "thursday" {
+		if strings.ToLower(words[1]) == "thursday"  {
 			weekday := time.Now().Weekday()
 			var message discordgo.MessageSend
-			if int(weekday) != 4 {
+			if int(weekday) != 4 && false {
 				message = discordgo.MessageSend{
 					Content: "*no it's not*",
 				}
 			} else {
-				f, _ := os.Open("./" + "thursday.gif")
+				f, _ := os.Open("/data/" + "thursday.gif")
 				defer f.Close()
 				var r io.Reader
 				r = f
@@ -349,7 +349,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					File:    &file,
 				}
 			}
-			//s.ChannelMessageSend(m.ChannelID, "***"+dog.Breeds[0].Name + "*** \r *"+dog.Breeds[0].Temperament+"* " + dog.URL)
 			s.ChannelMessageSendComplex(m.ChannelID, &message)
 		}
 	case "weather":
