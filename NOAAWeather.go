@@ -32,9 +32,30 @@ func getActiveAlertCount() int {
 func constructAlertDiscordMessages(feed NOAAAlertFeed) []discordgo.MessageSend {
 	var messages []discordgo.MessageSend
 	for _, alert := range feed.Entry {
+		footer := discordgo.MessageEmbedFooter{
+			Text:         "Expires: " + alert.Expires,
+			IconURL:      "",
+			ProxyIconURL: "",
+		}
+		embed := discordgo.MessageEmbed{
+			URL:         alert.Link.Href,
+			Type:        "",
+			Title:       alert.Title,
+			Description: alert.Summary,
+			Timestamp:   "",
+			Color:       250,
+			Footer:      &footer,
+			Image:       nil,
+			Thumbnail:   nil,
+			Video:       nil,
+			Provider:    nil,
+			Author:      nil,
+			Fields:      nil,
+		}
 		messages = append(messages,
 			discordgo.MessageSend{
 				Content:         alert.Event + "\n" + alert.Title + "\n" + "***" + alert.Summary + "***\n" + "_Effective: " + alert.Effective + "_\n_Expires: " + alert.Expires + "_\n",
+				Embed: &embed,
 			})
 
 	}

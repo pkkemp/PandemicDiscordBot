@@ -330,7 +330,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if strings.ToLower(words[1]) == "thursday"  {
 			weekday := time.Now().Weekday()
 			var message discordgo.MessageSend
-			if int(weekday) != 4 && false {
+			if int(weekday) != 4 {
 				message = discordgo.MessageSend{
 					Content: "*no it's not*",
 				}
