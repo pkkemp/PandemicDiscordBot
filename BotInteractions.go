@@ -42,6 +42,10 @@ func loadDogImage() Dog {
 	q.Add("limit", "1")
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
+	if err != nil {
+		//something went wrong
+		return nil
+	}
 	defer resp.Body.Close()
 	json.NewDecoder(resp.Body).Decode(&theDog)
 	return theDog
@@ -106,7 +110,7 @@ func xkcdImage(comic uint64) (XKCDComic, error) {
 	resp, err := client.Do(req)
 
 	var APIError error
-	if resp.StatusCode > 200 {
+	if resp.StatusCode > 200 || err != nil {
 		APIError = errors.New("NX")
 	}
 

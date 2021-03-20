@@ -179,6 +179,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "Ping!")
 	case "woof":
 		Dogs := loadDogImage()
+		if Dogs == nil {
+			//API failed
+			break
+		}
 		dog := Dogs[0]
 		// Create the file
 		tempFile, err  := ioutil.TempFile("", dog.ID + ".*.jpg")
