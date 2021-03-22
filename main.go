@@ -59,13 +59,15 @@ func main() {
 	}
 
 	//start the findAppointments function in a goroutine
-	go findAppointments(dg)
+	//go findAppointments(dg)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
+	dg.AddHandler(processReaction)
 
 
 	// Set the Discord gateway to notify us when messages are sent
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.Identify.Intents = discordgo.IntentsGuildMessageReactions
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -83,9 +85,37 @@ func main() {
 	// Cleanly close down the Discord session.
 	dg.Close()
 }
+func processReaction(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+
+	log.Print("I see a reaction!")
+}
 
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the authenticated bot has access to.
+
+func createMessageInRoles(channelID string, s *discordgo.Session) {
+	var messageEmbeds *[]discordgo.MessageEmbed
+	messageEmbeds = append(messageEmbeds, discordgo.MessageEmbed{
+		URL:         "",
+		Type:        "",
+		Title:       "React to subscribe to OKC Vaccine alerts",
+		Description: "",
+		Timestamp:   "",
+		Color:       250,
+		Footer:      nil,
+		Image:       nil,
+		Thumbnail:   nil,
+		Video:       nil,
+		Provider:    nil,
+		Author:      nil,
+		Fields:      nil,
+	})
+	message := discordgo.Message{
+		Embeds: messageEmbeds,
+
+	}
+	
+}
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
