@@ -181,6 +181,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Dogs := loadDogImage()
 		if Dogs == nil {
 			//API failed
+			emoji := discordgo.Emoji{
+				ID:            "807498175886786580",
+				Name:          "broken_wifi",
+				User:          nil,
+				RequireColons: true,
+				Managed:       false,
+				Animated:      false,
+				Available:     true,
+			}
+			s.MessageReactionAdd(m.ChannelID, m.ID, emoji.APIName())
 			break
 		}
 		dog := Dogs[0]
