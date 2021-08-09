@@ -59,7 +59,7 @@ func main() {
 	}
 
 	//start the findAppointments function in a goroutine
-	go findAppointments(dg)
+	//go findAppointments(dg)
 	// Register the messageCreate func as a callback for MessageCreate events.
 	dg.AddHandler(messageCreate)
 
